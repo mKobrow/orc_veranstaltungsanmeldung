@@ -121,7 +121,7 @@
     code = norm(code);
     if (!code) { show('anm-login'); return; }
     show('anm-loading');
-    api('GET', { action: 'data', c: code })
+    api('GET', { action: 'data', code: code })
       .then(function (res) {
         if (!res.ok) {
           $('#anm-loginmsg').textContent = res.msg;
