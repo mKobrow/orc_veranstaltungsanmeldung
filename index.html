@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Veranstaltungsanmeldung</title>
+  <style>
+    body {
+      margin: 0;
+      padding-top: 24px;
+      background: #f6f7f9;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+  </style>
+</head>
+<body>
+
+<div id="anm">
+  <section id="anm-login" class="anm-card" hidden>
+    <form id="anm-form">
+      <label for="anm-code"><strong>Persönlicher Code</strong></label>
+      <p class="anm-hint">Den Code bekommt ihr einmalig vom Trainer – keine Registrierung nötig.</p>
+      <input id="anm-code" autocomplete="off" autocapitalize="characters" maxlength="20" placeholder="z. B. K7M3QX">
+      <button class="anm-btn anm-primary" type="submit">Weiter</button>
+      <p id="anm-loginmsg" class="anm-msg anm-err"></p>
+    </form>
+  </section>
+
+  <section id="anm-loading" class="anm-center" hidden>Lade Veranstaltungen …</section>
+
+  <section id="anm-main" hidden>
+    <p class="anm-hint"><span id="anm-hello"></span> · <button class="anm-link" id="anm-logout" type="button">anderer Code</button></p>
+    <p class="anm-hint">Bemerkungen werden mit dem Klick auf „Zusagen“ bzw. „Absagen“ gespeichert. Ihr könnt eure Antwort bis zum Anmeldeschluss jederzeit ändern.</p>
+    <div id="anm-events"></div>
+  </section>
+</div>
+
+<style>
+  #anm {
+    --anm-card: #fff; --anm-text: #1f2328; --anm-muted: #6b7280; --anm-line: #e5e7eb; --anm-field: #f6f7f9;
+    --anm-accent: #1a5fb4; --anm-yes: #1e8e3e; --anm-yes-bg: #e6f4ea; --anm-no: #c5221f; --anm-no-bg: #fce8e6; --anm-open-bg: #f1f3f4;
+    max-width: 720px; margin: 0 auto; padding: 0 16px 32px; color: var(--anm-text); font-family: inherit; font-size: 16px; line-height: 1.5;
+  }
+  #anm * { box-sizing: border-box; }
+  #anm [hidden] { display: none !important; }
+  #anm .anm-card { background: var(--anm-card); border: 1px solid var(--anm-line); border-radius: 14px; padding: 18px; margin-top: 16px; }
+  #anm .anm-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  #anm h2 { font-size: 1.15rem; line-height: 1.3; margin: 0; font-weight: 700; }
+  #anm .anm-badge { flex-shrink: 0; font-size: .8rem; font-weight: 600; padding: 3px 10px; border-radius: 999px; }
+  #anm .anm-b-yes { background: var(--anm-yes-bg); color: var(--anm-yes); }
+  #anm .anm-b-no { background: var(--anm-no-bg); color: var(--anm-no); }
+  #anm .anm-b-open { background: var(--anm-open-bg); color: var(--anm-muted); }
+  #anm .anm-when { margin: 6px 0 0; font-weight: 600; color: var(--anm-accent); }
+  #anm .anm-meta { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 4px; }
+  #anm .anm-meta li { display: flex; gap: 8px; margin: 0; }
+  #anm .anm-info { margin-top: 12px; white-space: pre-line; overflow-wrap: anywhere; }
+  #anm .anm-info a { color: var(--anm-accent); text-decoration: underline; }
+  #anm .anm-deadline { margin: 12px 0 0; font-size: .9rem; color: var(--anm-muted); }
+  #anm textarea, #anm input { width: 100%; font: inherit; color: var(--anm-text); background: var(--anm-field); border: 1px solid var(--anm-line); border-radius: 10px; padding: 10px 12px; }
+  #anm textarea { margin-top: 14px; resize: vertical; }
+  #anm textarea:disabled { opacity: .5; }
+  #anm .anm-actions { display: flex; gap: 10px; margin-top: 10px; }
+  #anm .anm-btn { flex: 1; font: inherit; font-weight: 600; padding: 12px; border-radius: 10px; border: 1.5px solid var(--anm-line); background: var(--anm-card); color: var(--anm-text); cursor: pointer; }
+  #anm .anm-yes.anm-active { background: var(--anm-yes-bg); border-color: var(--anm-yes); color: var(--anm-yes); }
+  #anm .anm-no.anm-active { background: var(--anm-no-bg); border-color: var(--anm-no); color: var(--anm-no); }
+  #anm .anm-btn:disabled { opacity: .5; cursor: default; }
+  #anm .anm-primary { background: var(--anm-accent); border-color: var(--anm-accent); color: #fff; width: 100%; margin-top: 10px; }
+  #anm .anm-msg { margin: 8px 0 0; font-size: .9rem; min-height: 1.2em; color: var(--anm-muted); }
+  #anm .anm-ok { color: var(--anm-yes); }
+  #anm .anm-err { color: var(--anm-no); }
+  #anm .anm-hint { font-size: .9rem; color: var(--anm-muted); margin: 12px 0 0; }
+  #anm .anm-link { background: none; border: 0; padding: 0; color: var(--anm-accent); font: inherit; cursor: pointer; text-decoration: underline; }
+  #anm .anm-center { text-align: center; color: var(--anm-muted); padding: 40px 0; }
+  #anm #anm-code { text-transform: uppercase; letter-spacing: .15em; font-size: 1.2rem; text-align: center; }
+</style>
+
+<script>
+(function () {
+  var API_URL = 'https://script.google.com/macros/s/AKfycbxv-LiVUS52Bv3RR84o3XJGNQOPLSNsnomlsB1mXzeXd4c_ZHa9c7OPnb1Sa6oyRkIJ/exec';
+
+  var $ = function (s) { return document.querySelector(s); };
+  var currentCode = '';
+
+  function store(k, v) { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }
+  function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function norm(c) { return String(c || '').toUpperCase().replace(/[^A-Z0-9-]/g, ''); }
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  function show(id) {
+    ['anm-login', 'anm-loading', 'anm-main'].forEach(function (x) { $('#' + x).hidden = x !== id; });
+  }
+
+  function api(method, params, body) {
+    var url = API_URL + (params ? '?' + new URLSearchParams(params).toString() : '');
+    var opts = method === 'POST' ? { method: 'POST', body: JSON.stringify(body) } : {};
+    return fetch(url, opts).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    });
+  }
+
+  function linkify(container, text) {
+    String(text).split(/(https?:\/\/[^\s]+)/g).forEach(function (part, i) {
+      if (i % 2) {
+        var a = el('a', null, part);
+        a.href = part; a.target = '_blank'; a.rel = 'noopener';
+        container.appendChild(a);
+      } else if (part) {
+        container.appendChild(document.createTextNode(part));
+      }
+    });
+  }
+
+  function fetchData(code) {
+    code = norm(code);
+    if (!code) { show('anm-login'); return; }
+    show('anm-loading');
+    api('GET', { action: 'data', c: code })
+      .then(function (res) {
+        if (!res.ok) {
+          $('#anm-loginmsg').textContent = res.msg;
+          $('#anm-code').value = code;
+          store('anmeldeCode', null);
+          show('anm-login');
+          return;
+        }
+        currentCode = code;
+        store('anmeldeCode', code);
+        render(res);
+        show('anm-main');
+      })
+      .catch(function () {
+        $('#anm-loginmsg').textContent = 'Verbindungsfehler – bitte später erneut versuchen.';
+        show('anm-login');
+      });
+  }
+
+  function render(res) {
+    $('#anm-hello').textContent = 'Rückmeldungen für ' + res.name;
+    var box = $('#anm-events');
+    box.innerHTML = '';
+    if (!res.events.length) {
+      box.appendChild(el('p', 'anm-center', 'Aktuell stehen keine Veranstaltungen an.'));
+      return;
+    }
+    res.events.forEach(function (ev) { box.appendChild(renderEvent(ev)); });
+  }
+
+  function renderEvent(ev) {
+    var card = el('article', 'anm-card');
+    var head = el('div', 'anm-head');
+    var badge = el('span', 'anm-badge');
+    head.appendChild(el('h2', null, ev.title));
+    head.appendChild(badge);
+    card.appendChild(head);
+    if (ev.when) card.appendChild(el('p', 'anm-when', ev.when));
+
+    var meta = el('ul', 'anm-meta');
+    [['📍', ev.place], ['🤝', ev.meet], ['💶', ev.cost]].forEach(function (m) {
+      if (!m[1]) return;
+      var li = el('li');
+      li.appendChild(el('span', null, m[0]));
+      li.appendChild(el('span', null, m[1]));
+      meta.appendChild(li);
+    });
+    if (meta.children.length) card.appendChild(meta);
+
+    if (ev.info) { var info = el('div', 'anm-info'); linkify(info, ev.info); card.appendChild(info); }
+
+    var dlText = ev.closed ? '🔒 Anmeldung geschlossen' : (ev.deadline ? '⏰ Anmeldeschluss: ' + ev.deadline : '');
+    if (dlText) card.appendChild(el('p', 'anm-deadline', dlText));
+
+    var note = el('textarea');
+    note.rows = 2; note.maxLength = 500; note.value = ev.note || '';
+    note.placeholder = 'Bemerkung (optional), z. B. „kommt erst Samstag“';
+    var actions = el('div', 'anm-actions');
+    var yes = el('button', 'anm-btn anm-yes', '✅ Zusagen');
+    var no = el('button', 'anm-btn anm-no', '❌ Absagen');
+    yes.type = no.type = 'button';
+    var msg = el('p', 'anm-msg');
+
+    function paint() {
+      badge.textContent = ev.status === 'Zusage' ? 'Zugesagt' : ev.status === 'Absage' ? 'Abgesagt' : 'Offen';
+      badge.className = 'anm-badge ' + (ev.status === 'Zusage' ? 'anm-b-yes' : ev.status === 'Absage' ? 'anm-b-no' : 'anm-b-open');
+      yes.classList.toggle('anm-active', ev.status === 'Zusage');
+      no.classList.toggle('anm-active', ev.status === 'Absage');
+    }
+
+    function send(status) {
+      yes.disabled = no.disabled = true;
+      msg.className = 'anm-msg'; msg.textContent = 'Wird gespeichert …';
+      api('POST', null, { code: currentCode, eventId: ev.id, status: status, note: note.value })
+        .then(function (r) {
+          yes.disabled = no.disabled = false;
+          if (!r.ok) { msg.className = 'anm-msg anm-err'; msg.textContent = r.msg; return; }
+          ev.status = r.status; ev.note = r.note; paint();
+          msg.className = 'anm-msg anm-ok';
+          msg.textContent = r.unchanged ? 'Keine Änderung.' : (r.status === 'Zusage' ? 'Danke! Zusage gespeichert.' : 'Absage gespeichert.');
+        })
+        .catch(function () {
+          yes.disabled = no.disabled = false;
+          msg.className = 'anm-msg anm-err'; msg.textContent = 'Fehler beim Speichern – bitte erneut versuchen.';
+        });
+    }
+
+    yes.onclick = function () { send('Zusage'); };
+    no.onclick = function () { send('Absage'); };
+    if (ev.closed) { yes.disabled = no.disabled = true; note.disabled = true; }
+
+    actions.appendChild(yes);
+    actions.appendChild(no);
+    card.appendChild(note);
+    card.appendChild(actions);
+    card.appendChild(msg);
+    paint();
+    return card;
+  }
+
+  $('#anm-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    $('#anm-loginmsg').textContent = '';
+    fetchData($('#anm-code').value);
+  });
+
+  $('#anm-logout').addEventListener('click', function () {
+    store('anmeldeCode', null);
+    currentCode = '';
+    $('#anm-code').value = '';
+    $('#anm-loginmsg').textContent = '';
+    show('anm-login');
+  });
+
+  var startCode = new URLSearchParams(location.search).get('c') || load('anmeldeCode');
+  startCode ? fetchData(startCode) : show('anm-login');
+})();
+</script>
+
+</body>
+</html>
